@@ -1,0 +1,125 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 1
+      name: "Warm-up"
+    # Light load
+    - duration: 60
+      arrivalRate: 5
+      name: "Light load"
+    # Medium load
+    - duration: 120
+      arrivalRate: 10
+      name: "Medium load"
+    # Heavy load
+    - duration: 180
+      arrivalRate: 20
+      name: "Heavy load"
+    # Peak load
+    - duration: 120
+      arrivalRate: 50
+      name: "Peak load"
+    # Cooldown
+    - duration: 60
+      arrivalRate: 5
+      name: "Cooldown"
+  http:
+    timeout: 30
+    pool: 10
+  payload:
+    path: './test-data.csv'
+    fields:
+      - email
+      - password
+
+scenarios:
+  - name: "User Registration Flow"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "{{ $randomString() }}@loadtest.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+            - json: "$.data.user.id"
+              as: "userId"
+          expect:
+            - statusCode: [201, 409] # Allow conflict for duplicate emails
+
+  - name: "User Login Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "{{ $randomString() }}@loadtest.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+            - json: "$.data.user.id"
+              as: "userId"
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ $randomString() }}@loadtest.com"
+            password: "LoadTest123!"
+          expect:
+            - statusCode: [200, 401]
+
+  - name: "Class Listing and Details"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "{{ $randomString() }}@loadtest.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+      - get:
+          url: "/api/mclasses"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+      - think: 1 # Wait 1 second
+      - get:
+          url: "/api/mclasses?page=1&limit=10"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Class Application Concurrency"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "{{ $randomString() }}@loadtest.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+            - json: "$.data.user.id"
+              as: "userId"
+      - get:
+          url: "/api/mclasses"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          capture:
+            - json: "$.data.items[0].id"
+              as: "classId"
+      - post:
+          url: "/api/mclasses/{{ classId }}/apply"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: [201, 409] # Success or conflict (capacity full/duplicate)

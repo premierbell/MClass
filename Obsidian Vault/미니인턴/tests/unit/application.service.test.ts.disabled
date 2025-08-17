@@ -1,0 +1,319 @@
+import ApplicationService from '../../src/services/application';
+import DatabaseService from '../../src/services/database';
+
+// Mock dependencies
+jest.mock('../../src/services/database');
+
+const mockDatabaseService = DatabaseService as jest.MockedFunction<typeof DatabaseService>;
+
+describe('ApplicationService', () => {
+  let applicationService: ApplicationService;
+  let mockPrisma: any;
+
+  beforeEach(() => {
+    mockPrisma = {
+      $transaction: jest.fn(),
+      application: {
+        create: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn()
+      },
+      mClass: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn()
+      }
+    };
+
+    (DatabaseService.getInstance as jest.Mock).mockReturnValue(mockPrisma);
+    applicationService = new ApplicationService();
+    
+    jest.clearAllMocks();
+  });
+
+  describe('applyToClass', () => {
+    const userId = 'user-id';
+    const classId = 'class-id';
+
+    it('should create application successfully', async () => {
+      const mockClass = {
+        id: classId,
+        title: 'Test Class',
+        maxParticipants: 20,
+        startAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        endAt: new Date(Date.now() + 25 * 60 * 60 * 1000)
+      };
+
+      const mockApplication = {
+        id: 'app-id',
+        userId,
+        classId,
+        appliedAt: new Date()
+      };
+
+      // Mock transaction that checks capacity and creates application
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
+
+      mockPrisma.mClass.findUnique.mockResolvedValue(mockClass);
+      mockPrisma.application.findFirst.mockResolvedValue(null); // No existing application
+      mockPrisma.application.count.mockResolvedValue(10); // Current participants
+      mockPrisma.application.create.mockResolvedValue(mockApplication);
+
+      const result = await applicationService.applyToClass(userId, classId);
+
+      expect(mockPrisma.mClass.findUnique).toHaveBeenCalledWith({
+        where: { id: classId }
+      });
+      expect(mockPrisma.application.findFirst).toHaveBeenCalledWith({
+        where: { userId, classId }
+      });
+      expect(mockPrisma.application.count).toHaveBeenCalledWith({
+        where: { classId }
+      });
+      expect(mockPrisma.application.create).toHaveBeenCalledWith({
+        data: { userId, classId }
+      });
+      expect(result).toEqual(mockApplication);
+    });
+
+    it('should throw error for non-existent class', async () => {
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
+      mockPrisma.mClass.findUnique.mockResolvedValue(null);
+
+      await expect(
+        applicationService.applyToClass(userId, classId)
+      ).rejects.toThrow('Class not found');
+    });
+
+    it('should throw error for duplicate application', async () => {
+      const mockClass = {
+        id: classId,
+        maxParticipants: 20,
+        startAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        endAt: new Date(Date.now() + 25 * 60 * 60 * 1000)
+      };
+
+      const existingApplication = {
+        id: 'existing-app',
+        userId,
+        classId
+      };
+
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
+      mockPrisma.mClass.findUnique.mockResolvedValue(mockClass);
+      mockPrisma.application.findFirst.mockResolvedValue(existingApplication);
+
+      await expect(
+        applicationService.applyToClass(userId, classId)
+      ).rejects.toThrow('User has already applied to this class');
+    });
+
+    it('should throw error when class is at capacity', async () => {
+      const mockClass = {
+        id: classId,
+        maxParticipants: 20,
+        startAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        endAt: new Date(Date.now() + 25 * 60 * 60 * 1000)
+      };
+
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
+      mockPrisma.mClass.findUnique.mockResolvedValue(mockClass);
+      mockPrisma.application.findFirst.mockResolvedValue(null);
+      mockPrisma.application.count.mockResolvedValue(20); // At capacity
+
+      await expect(
+        applicationService.applyToClass(userId, classId)
+      ).rejects.toThrow('Class has reached maximum capacity');
+    });
+
+    it('should throw error for expired class', async () => {
+      const mockClass = {
+        id: classId,
+        maxParticipants: 20,
+        startAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // Started yesterday
+        endAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // Ended yesterday
+      };
+
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
+      mockPrisma.mClass.findUnique.mockResolvedValue(mockClass);
+      mockPrisma.application.findFirst.mockResolvedValue(null);
+
+      await expect(
+        applicationService.applyToClass(userId, classId)
+      ).rejects.toThrow('Application deadline has passed');
+    });
+  });
+
+  describe('cancelApplication', () => {
+    const userId = 'user-id';
+    const classId = 'class-id';
+
+    it('should cancel application successfully', async () => {
+      const mockApplication = {
+        id: 'app-id',
+        userId,
+        classId,
+        appliedAt: new Date()
+      };
+
+      mockPrisma.application.findFirst.mockResolvedValue(mockApplication);
+      mockPrisma.application.delete.mockResolvedValue(mockApplication);
+
+      const result = await applicationService.cancelApplication(userId, classId);
+
+      expect(mockPrisma.application.findFirst).toHaveBeenCalledWith({
+        where: { userId, classId }
+      });
+      expect(mockPrisma.application.delete).toHaveBeenCalledWith({
+        where: { id: mockApplication.id }
+      });
+      expect(result).toEqual(mockApplication);
+    });
+
+    it('should throw error for non-existent application', async () => {
+      mockPrisma.application.findFirst.mockResolvedValue(null);
+
+      await expect(
+        applicationService.cancelApplication(userId, classId)
+      ).rejects.toThrow('No application found for this user and class');
+    });
+  });
+
+  describe('getUserApplications', () => {
+    const userId = 'user-id';
+
+    it('should return user applications with class details', async () => {
+      const mockApplications = [
+        {
+          id: 'app-1',
+          userId,
+          classId: 'class-1',
+          appliedAt: new Date(),
+          mClass: {
+            id: 'class-1',
+            title: 'Class 1',
+            description: 'Description 1',
+            startAt: new Date(),
+            endAt: new Date(),
+            maxParticipants: 20
+          }
+        }
+      ];
+
+      mockPrisma.application.findMany.mockResolvedValue(mockApplications);
+
+      const result = await applicationService.getUserApplications(userId);
+
+      expect(mockPrisma.application.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        include: {
+          mClass: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              startAt: true,
+              endAt: true,
+              maxParticipants: true
+            }
+          }
+        },
+        orderBy: { appliedAt: 'desc' }
+      });
+      expect(result).toEqual(mockApplications);
+    });
+
+    it('should return empty array for user with no applications', async () => {
+      mockPrisma.application.findMany.mockResolvedValue([]);
+
+      const result = await applicationService.getUserApplications(userId);
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('getClassApplications', () => {
+    const classId = 'class-id';
+
+    it('should return class applications with user details', async () => {
+      const mockApplications = [
+        {
+          id: 'app-1',
+          userId: 'user-1',
+          classId,
+          appliedAt: new Date(),
+          user: {
+            id: 'user-1',
+            email: 'user1@example.com'
+          }
+        }
+      ];
+
+      mockPrisma.application.findMany.mockResolvedValue(mockApplications);
+
+      const result = await applicationService.getClassApplications(classId);
+
+      expect(mockPrisma.application.findMany).toHaveBeenCalledWith({
+        where: { classId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { appliedAt: 'asc' }
+      });
+      expect(result).toEqual(mockApplications);
+    });
+
+    it('should return empty array for class with no applications', async () => {
+      mockPrisma.application.findMany.mockResolvedValue([]);
+
+      const result = await applicationService.getClassApplications(classId);
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('checkUserApplicationExists', () => {
+    const userId = 'user-id';
+    const classId = 'class-id';
+
+    it('should return true for existing application', async () => {
+      mockPrisma.application.findFirst.mockResolvedValue({
+        id: 'app-id',
+        userId,
+        classId
+      });
+
+      const result = await applicationService.checkUserApplicationExists(userId, classId);
+
+      expect(mockPrisma.application.findFirst).toHaveBeenCalledWith({
+        where: { userId, classId }
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should return false for non-existent application', async () => {
+      mockPrisma.application.findFirst.mockResolvedValue(null);
+
+      const result = await applicationService.checkUserApplicationExists(userId, classId);
+
+      expect(result).toBe(false);
+    });
+  });
+
+});

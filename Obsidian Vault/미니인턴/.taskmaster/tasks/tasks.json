@@ -1,0 +1,698 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project Setup and Configuration",
+        "description": "Initialize Node.js project with TypeScript, Express.js, and essential dependencies",
+        "details": "Create package.json with Node.js 18+, install Express.js, TypeScript, nodemon, cors, helmet, dotenv. Setup tsconfig.json with strict mode, ES2020 target. Create folder structure: src/{controllers,middleware,models,routes,services,utils,types}, tests/, and config files. Setup development scripts and build configuration.",
+        "testStrategy": "Verify project builds successfully with tsc, runs with npm start, and basic Express server responds on configured port",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Node.js project and package.json configuration",
+            "description": "Create new Node.js project with package.json, set Node.js 18+ requirement, and configure basic project metadata",
+            "dependencies": [],
+            "details": "Run npm init to create package.json, set Node.js version requirement to 18+, configure project name, description, author, and license. Set main entry point and initial repository configuration.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Install and configure TypeScript with tsconfig.json",
+            "description": "Install TypeScript as development dependency and create tsconfig.json with strict configuration",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Install typescript and @types/node as devDependencies. Create tsconfig.json with strict mode enabled, ES2020 target, outDir set to dist/, rootDir set to src/, and proper module resolution settings.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Install Express.js and essential middleware packages",
+            "description": "Install Express.js framework and security/utility middleware dependencies",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Install express, cors, helmet, dotenv as dependencies. Install @types/express, @types/cors, @types/node, nodemon as devDependencies. Configure basic middleware stack for security and CORS handling.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create project folder structure and development scripts",
+            "description": "Setup organized folder structure and configure npm scripts for development workflow",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create src/ directory with subdirectories: controllers/, middleware/, models/, routes/, services/, utils/, types/. Create tests/ directory and basic config files. Setup npm scripts for dev (nodemon), build (tsc), and start commands.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Database Setup and Configuration",
+        "description": "Setup PostgreSQL/MySQL database with Prisma ORM and initial schema",
+        "details": "Install Prisma as ORM, configure database connection string in .env, create initial schema.prisma with User, Class, and Application models matching ERD requirements. Setup UUID primary keys, proper foreign key relationships, and unique constraints. Configure Prisma client generation and migration scripts.",
+        "testStrategy": "Verify database connection, successful migration execution, and Prisma client generation without errors",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install and Configure Prisma ORM",
+            "description": "Install Prisma CLI and client packages, initialize Prisma in the project",
+            "dependencies": [],
+            "details": "Install @prisma/client and prisma packages, run 'prisma init' to create initial Prisma configuration files, set up Prisma CLI for development",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Set Up Database Connection and Environment Variables",
+            "description": "Configure database connection string and environment variables for database access",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create DATABASE_URL in .env file for PostgreSQL/MySQL connection, configure database credentials, test connection to ensure database is accessible",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Design and Create Prisma Schema with Models",
+            "description": "Create schema.prisma with User, Class, and Application models matching ERD requirements",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "Define User model with id, email, password, isAdmin fields, Class model with id, name, description, instructor, maxParticipants, Application model with id, userId, classId, status, appliedAt. Use appropriate data types and field constraints",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Configure UUID Primary Keys and Foreign Key Relationships",
+            "description": "Set up UUID primary keys and establish proper foreign key relationships between models",
+            "dependencies": [
+              "2.3"
+            ],
+            "details": "Configure UUID as @id @default(uuid()) for all models, establish User-Application and Class-Application relationships with proper foreign keys, add unique constraints and indexes as needed",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Set Up Migration Scripts and Prisma Client Generation",
+            "description": "Configure database migration system and Prisma client generation for the application",
+            "dependencies": [
+              "2.4"
+            ],
+            "details": "Create initial database migration using 'prisma migrate dev', configure Prisma client generation, add migration and generate scripts to package.json, verify Prisma client can be imported and used in TypeScript",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Authentication System Implementation",
+        "description": "Implement JWT-based authentication with user registration and login",
+        "details": "Install bcrypt for password hashing, jsonwebtoken for JWT tokens. Create User model with email/password/isAdmin fields, implement signup endpoint with email validation and password hashing, login endpoint with credential verification and JWT token generation. Create authentication middleware for protected routes.",
+        "testStrategy": "Unit tests for password hashing/verification, JWT token generation/validation. Integration tests for signup/login endpoints with valid/invalid inputs",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Authentication Dependencies",
+            "description": "Install bcrypt and jsonwebtoken packages for password hashing and JWT token management",
+            "dependencies": [],
+            "details": "Run npm install bcrypt jsonwebtoken to add required authentication dependencies. Verify installation and check package.json for proper version entries.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create User Model with Password Hashing",
+            "description": "Implement User database model with email, password, and isAdmin fields including password hashing utilities",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Create User model with email (unique), password (hashed), and isAdmin fields. Implement pre-save middleware to hash passwords using bcrypt with salt rounds of 10. Add password comparison method for login verification.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement User Registration Endpoint",
+            "description": "Create signup endpoint with email validation and password hashing",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Build POST /api/auth/signup endpoint that validates email format, checks for existing users, hashes password, and creates new user record. Return appropriate success/error responses with proper HTTP status codes.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement User Login Endpoint",
+            "description": "Create login endpoint with credential verification and JWT token generation",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Build POST /api/auth/login endpoint that verifies email/password credentials using bcrypt comparison, generates JWT token with user payload including isAdmin flag, and returns token with user information.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create JWT Token Utilities",
+            "description": "Implement JWT token generation and validation utility functions",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Create utility functions for JWT token generation with proper expiration time, token verification with error handling for expired/invalid tokens, and payload extraction. Include JWT secret configuration from environment variables.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Build Authentication Middleware",
+            "description": "Create authentication middleware for protecting routes that require user login",
+            "dependencies": [
+              "3.5"
+            ],
+            "details": "Implement authentication middleware that extracts JWT token from Authorization header, verifies token validity, attaches user information to request object, and handles unauthorized access with proper error responses.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "User Management APIs",
+        "description": "Implement user registration, login, and application history endpoints",
+        "details": "Create POST /api/users/signup with email uniqueness validation, password complexity rules, proper error handling. POST /api/users/login with credential validation, JWT response. GET /api/users/applications with authentication middleware, returning user's class applications with class details and timestamps.",
+        "testStrategy": "Integration tests covering successful registration, duplicate email rejection, login with correct/incorrect credentials, authenticated access to application history",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement POST /api/users/signup endpoint",
+            "description": "Create user registration endpoint with email uniqueness validation and password complexity rules",
+            "dependencies": [],
+            "details": "Implement POST /api/users/signup endpoint with email format validation, password complexity requirements (minimum length, special characters), check for existing email in database, hash password using bcrypt, create new user record, return appropriate success/error responses",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement POST /api/users/login endpoint",
+            "description": "Create user authentication endpoint with credential verification and JWT token generation",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Implement POST /api/users/login endpoint that validates email format, retrieves user from database, verifies password using bcrypt comparison, generates JWT token with user payload, returns token and user info on success, handles invalid credential scenarios",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create GET /api/users/applications endpoint",
+            "description": "Implement authenticated endpoint to retrieve user's class application history",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Create GET /api/users/applications endpoint requiring authentication middleware, query database for user's applications with JOIN to classes table, return application data with class details and timestamps, handle empty results gracefully",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add comprehensive input validation and error handling",
+            "description": "Implement consistent validation and error response patterns across all user management endpoints",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3"
+            ],
+            "details": "Add input sanitization, implement consistent error response format, add rate limiting considerations, validate request body schemas, handle database connection errors, add logging for security events, ensure proper HTTP status codes for all scenarios",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Authorization Middleware and Admin Controls",
+        "description": "Implement role-based access control for admin-only operations",
+        "details": "Create admin authorization middleware checking isAdmin field from JWT payload. Implement proper error responses for unauthorized access attempts. Apply middleware to class creation and deletion endpoints. Setup admin user creation utility for testing purposes.",
+        "testStrategy": "Unit tests for admin middleware logic, integration tests verifying admin-only endpoints reject non-admin users and accept admin users",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Admin Authorization Middleware",
+            "description": "Implement middleware function to check isAdmin field from JWT payload",
+            "dependencies": [],
+            "details": "Create adminAuth middleware that extracts JWT token, verifies isAdmin field is true, and calls next() for authorized users. Should work with existing auth middleware from task 3.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Authorization Error Responses",
+            "description": "Create proper error handling for unauthorized access attempts",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement standardized error responses for unauthorized access (403 Forbidden) and missing admin privileges. Include clear error messages and proper HTTP status codes.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Apply Middleware and Create Admin Utility",
+            "description": "Apply admin middleware to endpoints and create admin user creation utility",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Apply adminAuth middleware to class creation and deletion endpoints. Create utility script or endpoint for creating admin users for testing purposes. Ensure proper middleware order and error handling.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "M-Class CRUD Operations",
+        "description": "Implement class creation, listing, detail view, and deletion with proper authorization",
+        "details": "Create POST /api/mclasses (admin-only) with validation for title, description, maxParticipants, startAt, endAt. GET /api/mclasses with pagination, current participant count. GET /api/mclasses/:id with detailed information. DELETE /api/mclasses/:id (admin-only) with proper cascade handling for existing applications.",
+        "testStrategy": "Integration tests for each CRUD operation, validation error handling, admin authorization checks, and data integrity verification",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement POST /api/mclasses endpoint with admin authorization",
+            "description": "Create class creation endpoint with admin-only access and comprehensive input validation",
+            "dependencies": [],
+            "details": "Implement POST /api/mclasses route with admin middleware authentication. Add validation for required fields: title (string, 3-100 chars), description (string, max 500 chars), maxParticipants (number, min 1), startAt/endAt (ISO dates, startAt < endAt, both future dates). Return created class with generated ID and timestamps.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create validation schemas for class creation and updates",
+            "description": "Implement comprehensive validation schemas using Joi or Zod for M-Class operations",
+            "dependencies": [],
+            "details": "Create validation schemas for class creation with proper field types, constraints, and error messages. Include schemas for title length, description limits, participant count validation, date format validation, and business logic validation (start date before end date, future dates only).",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement GET /api/mclasses with pagination and participant counting",
+            "description": "Create class listing endpoint with pagination support and current participant count calculation",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Implement GET /api/mclasses with query parameters for pagination (page, limit). Include participant count calculation by joining with applications table. Return paginated results with metadata (total count, current page, total pages) and each class showing current participant count vs maxParticipants.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement GET /api/mclasses/:id with detailed information",
+            "description": "Create individual class detail endpoint with comprehensive class information",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Implement GET /api/mclasses/:id route returning detailed class information including all fields, current participant count, list of applicants (for admin users), application status for authenticated users, and calculated fields like remaining spots and registration deadline status.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Add DELETE /api/mclasses/:id with cascade handling",
+            "description": "Implement class deletion endpoint with proper cascade handling for related applications",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Create DELETE /api/mclasses/:id route with admin-only access. Implement cascade deletion logic to handle existing applications - either soft delete class and notify applicants, or hard delete with proper cascade constraints. Include transaction handling to ensure data integrity.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add comprehensive error handling for all CRUD operations",
+            "description": "Implement robust error handling, logging, and response formatting for all M-Class endpoints",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4",
+              "6.5"
+            ],
+            "details": "Add try-catch blocks, proper HTTP status codes, standardized error response format, input validation error handling, database constraint error handling, and logging for all CRUD operations. Include specific error messages for common scenarios like class not found, unauthorized access, and validation failures.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Class Application System with Basic Validation",
+        "description": "Implement class application endpoint with duplicate prevention and deadline checks",
+        "details": "Create POST /api/mclasses/:id/apply endpoint with authentication required. Implement validation logic: check for existing application (UNIQUE constraint), verify application deadline hasn't passed, validate class exists and is active. Store application record with userId, classId, and timestamp.",
+        "testStrategy": "Integration tests covering successful application, duplicate application rejection, deadline validation, and non-existent class handling",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create POST /api/mclasses/:id/apply endpoint with authentication",
+            "description": "Set up the basic endpoint structure with authentication middleware and parameter validation",
+            "dependencies": [],
+            "details": "Create the route handler in the classes router, add authentication middleware to verify JWT token, implement parameter validation for classId, and set up basic request/response structure",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement duplicate application prevention using UNIQUE constraints",
+            "description": "Add database validation to prevent users from applying to the same class multiple times",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Create UNIQUE constraint on (userId, classId) in applications table, implement database query to check existing applications, and handle duplicate application errors with appropriate error messages",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add deadline validation logic",
+            "description": "Implement validation to check if application deadline has passed",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Fetch class details to get application deadline, compare current timestamp with deadline, and return appropriate error if deadline has passed",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement class existence and status validation",
+            "description": "Validate that the class exists and is in an active state for applications",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Query database to verify class exists by ID, check class status is active/open for applications, and return 404 or appropriate error for invalid classes",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create application record storage with proper error handling",
+            "description": "Store the application record and implement comprehensive error handling",
+            "dependencies": [
+              "7.2",
+              "7.3",
+              "7.4"
+            ],
+            "details": "Insert application record with userId, classId, and timestamp into database, implement transaction handling for data consistency, and add comprehensive error handling for database errors and edge cases",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Concurrency Control and Capacity Management",
+        "description": "Implement database-level concurrency control to prevent capacity overflow",
+        "details": "Implement transaction-based capacity checking using database locks (SELECT FOR UPDATE or optimistic locking). Create atomic operation that checks current participant count against maxParticipants before inserting application record. Handle race conditions where multiple users apply simultaneously to prevent exceeding capacity limits.",
+        "testStrategy": "Load testing with 200 concurrent requests to 100-capacity class, verify exactly 100 successful applications and 100 rejections. Unit tests for transaction rollback scenarios",
+        "priority": "high",
+        "dependencies": [
+          7
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research and Choose Concurrency Control Strategy",
+            "description": "Analyze pessimistic vs optimistic locking approaches for capacity management",
+            "dependencies": [],
+            "details": "Research database locking mechanisms (SELECT FOR UPDATE vs version-based optimistic locking). Evaluate trade-offs between performance and consistency. Consider deadlock scenarios and choose appropriate strategy for high-concurrency application scenarios. Document decision rationale.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Transaction-Based Capacity Checking",
+            "description": "Create database transaction wrapper with proper locking mechanism",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Implement database transaction service with chosen locking strategy. Create transaction wrapper function that handles connection management, rollback on errors, and proper lock acquisition. Setup database isolation levels and timeout configurations.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create Atomic Participant Count Verification",
+            "description": "Implement atomic operation for checking and updating participant count",
+            "dependencies": [
+              "8.2"
+            ],
+            "details": "Create service function that atomically checks current participant count against maxParticipants within transaction. Implement SELECT FOR UPDATE or optimistic locking query to get current count. Ensure count verification and application insertion happen atomically.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Handle Race Conditions and Deadlock Prevention",
+            "description": "Implement robust handling of concurrent access scenarios",
+            "dependencies": [
+              "8.3"
+            ],
+            "details": "Implement retry logic for deadlock scenarios with exponential backoff. Handle transaction timeout scenarios gracefully. Create proper error classification for different failure types (capacity exceeded, deadlock, timeout). Implement queue-based processing if needed.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Error Handling for Capacity Overflow",
+            "description": "Create comprehensive error handling for capacity-related failures",
+            "dependencies": [
+              "8.4"
+            ],
+            "details": "Create specific error types for capacity overflow scenarios. Implement proper HTTP status codes and error messages for capacity exceeded cases. Handle partial failures and ensure data consistency. Create user-friendly error responses with retry suggestions.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create Load Testing Setup for Validation",
+            "description": "Develop comprehensive load testing to validate concurrency control",
+            "dependencies": [
+              "8.5"
+            ],
+            "details": "Create load testing scripts using tools like Artillery or k6. Design test scenarios with 200+ concurrent requests to classes with limited capacity. Implement test validation to verify exactly maxParticipants are accepted and excess are rejected. Create performance benchmarks and monitoring.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Error Handling and Response Standardization",
+        "description": "Implement comprehensive error handling and standardized API responses",
+        "details": "Create standardized response format with success/error structure, proper HTTP status codes, and consistent error messages. Implement global error handling middleware for unhandled exceptions, validation errors, and database errors. Add request validation using express-validator or joi for all endpoints.",
+        "testStrategy": "Unit tests for error formatting functions, integration tests verifying proper error responses for various failure scenarios",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Standardized Response Format Structure",
+            "description": "Create consistent response format with success/error structure and proper HTTP status codes",
+            "dependencies": [],
+            "details": "Define response interface with success boolean, data/error fields, message, and statusCode. Create utility functions for formatting success and error responses. Establish HTTP status code conventions for different scenarios (200, 201, 400, 401, 403, 404, 409, 500).",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create Global Error Handling Middleware",
+            "description": "Implement comprehensive error handling middleware for all unhandled exceptions",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Create error middleware that catches all unhandled errors, formats them using standardized response structure, logs errors appropriately, and returns consistent error responses. Handle different error types (validation, database, authentication, authorization, general).",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Request Validation with Express-Validator",
+            "description": "Add comprehensive input validation for all API endpoints using express-validator",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Install and configure express-validator, create validation schemas for all endpoints (user registration, login, class creation, application submission), implement validation middleware that returns standardized error responses for validation failures.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Proper HTTP Status Codes and Error Messages",
+            "description": "Implement consistent HTTP status codes and user-friendly error messages across all endpoints",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Update all route handlers to use proper HTTP status codes, create error message constants for common scenarios, ensure error messages are user-friendly and don't expose sensitive system information, implement proper error categorization.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create Error Logging and Monitoring Utilities",
+            "description": "Implement comprehensive error logging and monitoring system for debugging and maintenance",
+            "dependencies": [
+              "9.2"
+            ],
+            "details": "Create logging utility using winston or similar, implement structured logging with error levels, add request correlation IDs for tracing, create error monitoring dashboard or integration, implement log rotation and retention policies.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Testing Suite and Documentation",
+        "description": "Implement comprehensive test suite and create project documentation",
+        "details": "Setup Jest and Supertest for testing, create test database configuration, implement unit tests for business logic and integration tests for all API endpoints. Write comprehensive README.md with setup instructions, API specification table, ERD diagram, and troubleshooting guide. Aim for 80%+ test coverage.",
+        "testStrategy": "Verify all tests pass, coverage reports show >80%, API documentation is complete and accurate, setup instructions work on clean environment",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Jest and Supertest testing framework",
+            "description": "Install and configure Jest as the test runner and Supertest for HTTP endpoint testing",
+            "dependencies": [],
+            "details": "Install Jest, Supertest, and related TypeScript types. Configure jest.config.js with TypeScript support, test file patterns, and coverage settings. Set up test scripts in package.json.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure test database and environment",
+            "description": "Set up isolated test database configuration and environment variables",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Create test database configuration, set up .env.test file, configure database cleanup and seeding utilities. Ensure test isolation with separate database instance.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests for business logic and utilities",
+            "description": "Create comprehensive unit tests for service layer and utility functions",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Write unit tests for authentication services, validation utilities, password hashing, JWT token handling, and other business logic functions. Mock external dependencies.\n<info added on 2025-08-15T14:41:27.847Z>\nCompleted implementation with 130 comprehensive unit tests across 6 test files covering password utilities (19 tests), JWT utilities (17 tests), validation utilities (35 tests), response utilities (35 tests), and UserService business logic (24 tests). All tests successfully mock external dependencies including bcrypt, JWT, and Prisma client. Implementation includes proper TypeScript compatibility, isolated test environments, mock data factories, comprehensive error handling validation, and edge case coverage. All 130 tests passing with full business logic validation and realistic test scenarios.\n</info added on 2025-08-15T14:41:27.847Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create integration tests for all API endpoints",
+            "description": "Implement end-to-end integration tests for all REST API endpoints",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Write integration tests for user authentication, M-class CRUD operations, application management endpoints. Test success cases, validation errors, authorization checks, and edge cases.\n<info added on 2025-08-16T01:27:48.488Z>\nImplementation completed with comprehensive test coverage:\n\nCreated 4 integration test files with 314 total tests:\n- Authentication endpoints: 52 tests covering signup, login, logout scenarios\n- User Management: 79 tests for profile operations and user administration  \n- M-Class CRUD: 86 tests for class creation, listing, updates, and deletion\n- Application Management: 97 tests for application lifecycle and status changes\n\nTest coverage includes:\n- Success path validation with proper HTTP status codes and response formats\n- Error handling for validation failures, authentication, and authorization\n- Rate limiting enforcement and concurrency scenarios\n- Database integrity checks and proper cascade operations\n- Edge cases like duplicate entries, invalid data, and boundary conditions\n\nImplemented robust test infrastructure:\n- Isolated test database with automatic seeding and cleanup\n- Reusable test utilities for user creation and authentication\n- Proper async/await handling and transaction management\n- Performance validation for API response times\n\nAll integration tests pass successfully, validating complete end-to-end API functionality with realistic usage scenarios.\n</info added on 2025-08-16T01:27:48.488Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement load testing for concurrency scenarios",
+            "description": "Create load tests to verify system performance under concurrent user access",
+            "dependencies": [
+              "10.4"
+            ],
+            "details": "Set up load testing scenarios for concurrent user registrations, class applications, and data retrieval. Test database connection pooling and race condition handling.\n<info added on 2025-08-16T01:36:32.996Z>\nImplementation completed successfully. Developed comprehensive load testing framework with four distinct testing strategies: 1) Basic Load Testing - validates fundamental performance with 100-1000 concurrent requests, measuring response times and throughput baselines, 2) Concurrent Application Testing - specifically targets race condition scenarios with 50+ simultaneous applications to capacity-limited classes, ensuring proper queue management and data integrity, 3) Comprehensive Stress Testing - multi-phase testing covering authentication flows, class operations, and sustained load scenarios while monitoring for memory leaks and performance degradation, 4) Artillery-based Professional Load Testing - configurable multi-phase scenarios with ramp-up, sustained load, and spike testing capabilities. \n\nAll test suites successfully measure critical performance metrics including response time percentiles, throughput rates, success/error ratios, memory consumption patterns, and database transaction integrity under load. Established performance baselines for normal operations (10-200 concurrent requests) and validated system behavior under stress conditions (500 concurrent peak load with 50 RPS sustained load). Comprehensive documentation created covering test execution procedures, performance threshold definitions, troubleshooting guides for common load testing issues, and CI/CD pipeline integration examples for automated performance regression testing.\n</info added on 2025-08-16T01:36:32.996Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Write comprehensive README.md with setup and API documentation",
+            "description": "Create complete project documentation including setup instructions and API specification",
+            "dependencies": [],
+            "details": "Write README.md with project overview, installation steps, environment setup, API endpoint documentation table, ERD diagram, and troubleshooting guide. Include example requests/responses.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Generate test coverage reports and aim for 80%+ coverage",
+            "description": "Configure coverage reporting and ensure comprehensive test coverage metrics",
+            "dependencies": [
+              "10.3",
+              "10.4",
+              "10.5"
+            ],
+            "details": "Set up Jest coverage reporting, configure coverage thresholds, identify uncovered code areas, and add additional tests to achieve 80%+ coverage across all modules.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-15T04:37:44.458Z",
+      "updated": "2025-08-16T02:21:46.689Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

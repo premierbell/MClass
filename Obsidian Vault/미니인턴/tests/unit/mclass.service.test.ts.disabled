@@ -1,0 +1,365 @@
+import MClassService from '../../src/services/mclass';
+import DatabaseService from '../../src/services/database';
+
+// Mock dependencies
+jest.mock('../../src/services/database');
+
+// Mock the database service
+
+describe('MClassService', () => {
+  let mclassService: MClassService;
+  let mockPrisma: any;
+
+  beforeEach(() => {
+    mockPrisma = {
+      mClass: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn()
+      },
+      application: {
+        count: jest.fn(),
+        findMany: jest.fn()
+      }
+    };
+
+    (DatabaseService.getInstance as jest.Mock).mockReturnValue(mockPrisma);
+    mclassService = new MClassService();
+    
+    jest.clearAllMocks();
+  });
+
+  describe('createMClass', () => {
+    const validClassData = {
+      title: 'Test Class',
+      description: 'Test Description',
+      maxParticipants: 20,
+      startAt: new Date('2024-12-01T10:00:00Z'),
+      endAt: new Date('2024-12-01T12:00:00Z')
+    };
+
+    it('should create M-Class successfully', async () => {
+      const mockCreatedClass = {
+        id: 'class-id',
+        ...validClassData,
+        hostId: 'host-id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      mockPrisma.mClass.create.mockResolvedValue(mockCreatedClass);
+
+      const result = await mclassService.createMClass(
+        validClassData.title,
+        validClassData.description,
+        validClassData.maxParticipants,
+        validClassData.startAt,
+        validClassData.endAt,
+        'host-id'
+      );
+
+      expect(mockPrisma.mClass.create).toHaveBeenCalledWith({
+        data: {
+          title: validClassData.title,
+          description: validClassData.description,
+          maxParticipants: validClassData.maxParticipants,
+          startAt: validClassData.startAt,
+          endAt: validClassData.endAt,
+          hostId: 'host-id'
+        }
+      });
+      expect(result).toEqual(mockCreatedClass);
+    });
+
+    it('should handle database error during creation', async () => {
+      const error = new Error('Database error');
+      mockPrisma.mClass.create.mockRejectedValue(error);
+
+      await expect(
+        mclassService.createMClass(
+          validClassData.title,
+          validClassData.description,
+          validClassData.maxParticipants,
+          validClassData.startAt,
+          validClassData.endAt,
+          'host-id'
+        )
+      ).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('getMClasses', () => {
+    it('should return paginated M-Classes with participant counts', async () => {
+      const mockClasses = [
+        {
+          id: 'class-1',
+          title: 'Class 1',
+          description: 'Description 1',
+          maxParticipants: 20,
+          startAt: new Date(),
+          endAt: new Date(),
+          hostId: 'host-id',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      const mockTotal = 1;
+
+      mockPrisma.mClass.findMany.mockResolvedValue(mockClasses);
+      mockPrisma.mClass.count.mockResolvedValue(mockTotal);
+      mockPrisma.application.count.mockResolvedValue(5); // 5 participants
+
+      const result = await mclassService.getMClasses(1, 10);
+
+      expect(mockPrisma.mClass.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          host: {
+            select: { email: true }
+          }
+        }
+      });
+
+      expect(mockPrisma.mClass.count).toHaveBeenCalled();
+      expect(mockPrisma.application.count).toHaveBeenCalledWith({
+        where: { classId: 'class-1' }
+      });
+
+      expect(result.classes).toHaveLength(1);
+      expect(result.classes[0]).toMatchObject({
+        ...mockClasses[0],
+        currentParticipants: 5,
+        remainingSpots: 15
+      });
+      expect(result.total).toBe(mockTotal);
+    });
+
+    it('should handle empty result', async () => {
+      mockPrisma.mClass.findMany.mockResolvedValue([]);
+      mockPrisma.mClass.count.mockResolvedValue(0);
+
+      const result = await mclassService.getMClasses(1, 10);
+
+      expect(result.classes).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getMClassById', () => {
+    it('should return M-Class with participant details', async () => {
+      const mockClass = {
+        id: 'class-id',
+        title: 'Test Class',
+        description: 'Test Description',
+        maxParticipants: 20,
+        startAt: new Date(),
+        endAt: new Date(),
+        hostId: 'host-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        host: { email: 'host@example.com' },
+        applications: [
+          {
+            id: 'app-1',
+            userId: 'user-1',
+            appliedAt: new Date(),
+            user: { email: 'user1@example.com' }
+          }
+        ]
+      };
+
+      mockPrisma.mClass.findUnique.mockResolvedValue(mockClass);
+
+      const result = await mclassService.getMClassById('class-id');
+
+      expect(mockPrisma.mClass.findUnique).toHaveBeenCalledWith({
+        where: { id: 'class-id' },
+        include: {
+          host: { select: { email: true } },
+          applications: {
+            include: { user: { select: { email: true } } },
+            orderBy: { appliedAt: 'asc' }
+          }
+        }
+      });
+
+      expect(result).toMatchObject({
+        ...mockClass,
+        currentParticipants: 1,
+        remainingSpots: 19,
+        hostEmail: 'host@example.com'
+      });
+    });
+
+    it('should return null for non-existent class', async () => {
+      mockPrisma.mClass.findUnique.mockResolvedValue(null);
+
+      const result = await mclassService.getMClassById('non-existent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('updateMClass', () => {
+    const updateData = {
+      title: 'Updated Title',
+      description: 'Updated Description'
+    };
+
+    it('should update M-Class successfully', async () => {
+      const mockUpdatedClass = {
+        id: 'class-id',
+        ...updateData,
+        maxParticipants: 20,
+        startAt: new Date(),
+        endAt: new Date(),
+        hostId: 'host-id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      mockPrisma.mClass.update.mockResolvedValue(mockUpdatedClass);
+
+      const result = await mclassService.updateMClass('class-id', updateData);
+
+      expect(mockPrisma.mClass.update).toHaveBeenCalledWith({
+        where: { id: 'class-id' },
+        data: updateData
+      });
+      expect(result).toEqual(mockUpdatedClass);
+    });
+
+    it('should handle update of non-existent class', async () => {
+      const error = new Error('Record not found');
+      mockPrisma.mClass.update.mockRejectedValue(error);
+
+      await expect(
+        mclassService.updateMClass('non-existent', updateData)
+      ).rejects.toThrow('Record not found');
+    });
+  });
+
+  describe('deleteMClass', () => {
+    it('should delete M-Class successfully', async () => {
+      const mockDeletedClass = {
+        id: 'class-id',
+        title: 'Deleted Class',
+        description: 'Description',
+        maxParticipants: 20,
+        startAt: new Date(),
+        endAt: new Date(),
+        hostId: 'host-id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      mockPrisma.mClass.delete.mockResolvedValue(mockDeletedClass);
+
+      const result = await mclassService.deleteMClass('class-id');
+
+      expect(mockPrisma.mClass.delete).toHaveBeenCalledWith({
+        where: { id: 'class-id' }
+      });
+      expect(result).toEqual(mockDeletedClass);
+    });
+
+    it('should handle deletion of non-existent class', async () => {
+      const error = new Error('Record not found');
+      mockPrisma.mClass.delete.mockRejectedValue(error);
+
+      await expect(
+        mclassService.deleteMClass('non-existent')
+      ).rejects.toThrow('Record not found');
+    });
+  });
+
+  describe('getParticipantCount', () => {
+    it('should return participant count for class', async () => {
+      mockPrisma.application.count.mockResolvedValue(15);
+
+      const result = await mclassService.getParticipantCount('class-id');
+
+      expect(mockPrisma.application.count).toHaveBeenCalledWith({
+        where: { classId: 'class-id' }
+      });
+      expect(result).toBe(15);
+    });
+
+    it('should return 0 for class with no participants', async () => {
+      mockPrisma.application.count.mockResolvedValue(0);
+
+      const result = await mclassService.getParticipantCount('class-id');
+
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('getMClassesByHost', () => {
+    it('should return classes hosted by specific user', async () => {
+      const mockClasses = [
+        {
+          id: 'class-1',
+          title: 'Hosted Class 1',
+          hostId: 'host-id',
+          maxParticipants: 20,
+          startAt: new Date(),
+          endAt: new Date(),
+          createdAt: new Date()
+        }
+      ];
+
+      mockPrisma.mClass.findMany.mockResolvedValue(mockClasses);
+      mockPrisma.application.count.mockResolvedValue(10);
+
+      const result = await mclassService.getMClassesByHost('host-id');
+
+      expect(mockPrisma.mClass.findMany).toHaveBeenCalledWith({
+        where: { hostId: 'host-id' },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        ...mockClasses[0],
+        currentParticipants: 10,
+        remainingSpots: 10
+      });
+    });
+
+    it('should return empty array for host with no classes', async () => {
+      mockPrisma.mClass.findMany.mockResolvedValue([]);
+
+      const result = await mclassService.getMClassesByHost('host-id');
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('checkClassExists', () => {
+    it('should return true for existing class', async () => {
+      mockPrisma.mClass.findFirst.mockResolvedValue({ id: 'class-id' });
+
+      const result = await mclassService.checkClassExists('class-id');
+
+      expect(mockPrisma.mClass.findFirst).toHaveBeenCalledWith({
+        where: { id: 'class-id' }
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should return false for non-existent class', async () => {
+      mockPrisma.mClass.findFirst.mockResolvedValue(null);
+
+      const result = await mclassService.checkClassExists('non-existent');
+
+      expect(result).toBe(false);
+    });
+  });
+});

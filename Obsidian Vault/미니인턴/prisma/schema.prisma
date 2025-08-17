@@ -1,0 +1,62 @@
+// MiniIntern M-Class Application System Database Schema
+// Prisma schema file for managing Users, Classes, and Applications
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents both regular users and admins
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password using bcrypt
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  applications Application[]
+  hostedClasses MClass[] @relation("ClassHost")
+
+  @@map("users")
+}
+
+// MClass model - represents M-Class offerings
+model MClass {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  maxParticipants Int
+  startAt         DateTime
+  endAt           DateTime
+  hostId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  host         User          @relation("ClassHost", fields: [hostId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@map("mclasses")
+}
+
+// Application model - represents user applications to classes
+model Application {
+  id        String   @id @default(uuid())
+  userId    String
+  classId   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mclass  MClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([userId, classId], name: "unique_user_class_application")
+  @@map("applications")
+}

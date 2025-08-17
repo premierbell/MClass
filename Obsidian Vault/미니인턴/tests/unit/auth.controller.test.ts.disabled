@@ -1,0 +1,271 @@
+import { Request, Response } from 'express';
+import { AuthController } from '../../src/controllers/auth';
+import { UserService } from '../../src/services/user';
+import * as jwtUtils from '../../src/utils/jwt';
+import * as passwordUtils from '../../src/utils/password';
+
+// Mock dependencies
+jest.mock('../../src/services/user');
+jest.mock('../../src/utils/jwt');
+jest.mock('../../src/utils/password');
+
+const mockUserService = UserService as jest.MockedClass<typeof UserService>;
+const mockJwtUtils = jwtUtils as jest.Mocked<typeof jwtUtils>;
+const mockPasswordUtils = passwordUtils as jest.Mocked<typeof passwordUtils>;
+
+describe('AuthController', () => {
+  let authController: AuthController;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockNext: jest.Mock;
+
+  beforeEach(() => {
+    authController = new AuthController();
+    
+    mockRequest = {
+      body: {},
+      user: undefined
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+    
+    mockNext = jest.fn();
+    
+    // Reset all mocks
+    jest.clearAllMocks();
+  });
+
+  describe('signup', () => {
+    const validSignupData = {
+      email: 'test@example.com',
+      password: 'StrongPassword123!'
+    };
+
+    beforeEach(() => {
+      mockRequest.body = validSignupData;
+    });
+
+    it('should create user successfully', async () => {
+      const mockUser = {
+        id: 'user-id',
+        email: 'test@example.com',
+        isAdmin: false,
+        createdAt: new Date()
+      };
+      
+      const mockToken = 'jwt-token';
+
+      mockUserService.prototype.createUser.mockResolvedValue(mockUser);
+      mockJwtUtils.generateToken.mockReturnValue(mockToken);
+
+      await authController.signup(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockUserService.prototype.createUser).toHaveBeenCalledWith(
+        validSignupData.email,
+        validSignupData.password,
+        false
+      );
+      expect(mockJwtUtils.generateToken).toHaveBeenCalledWith({
+        id: mockUser.id,
+        email: mockUser.email,
+        isAdmin: mockUser.isAdmin
+      });
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: {
+          user: {
+            id: mockUser.id,
+            email: mockUser.email,
+            isAdmin: mockUser.isAdmin,
+            createdAt: mockUser.createdAt
+          },
+          accessToken: mockToken
+        },
+        message: 'User registered successfully'
+      });
+    });
+
+    it('should handle user creation error', async () => {
+      const error = new Error('User already exists');
+      mockUserService.prototype.createUser.mockRejectedValue(error);
+
+      await authController.signup(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+
+    it('should handle missing email', async () => {
+      mockRequest.body = { password: 'StrongPassword123!' };
+
+      await authController.signup(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Email and password are required')
+        })
+      );
+    });
+
+    it('should handle missing password', async () => {
+      mockRequest.body = { email: 'test@example.com' };
+
+      await authController.signup(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Email and password are required')
+        })
+      );
+    });
+  });
+
+  describe('login', () => {
+    const validLoginData = {
+      email: 'test@example.com',
+      password: 'StrongPassword123!'
+    };
+
+    beforeEach(() => {
+      mockRequest.body = validLoginData;
+    });
+
+    it('should authenticate user successfully', async () => {
+      const mockUser = {
+        id: 'user-id',
+        email: 'test@example.com',
+        isAdmin: false,
+        createdAt: new Date()
+      };
+      
+      const mockToken = 'jwt-token';
+
+      mockUserService.prototype.authenticateUser.mockResolvedValue(mockUser);
+      mockJwtUtils.generateToken.mockReturnValue(mockToken);
+
+      await authController.login(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockUserService.prototype.authenticateUser).toHaveBeenCalledWith(
+        validLoginData.email,
+        validLoginData.password
+      );
+      expect(mockJwtUtils.generateToken).toHaveBeenCalledWith({
+        id: mockUser.id,
+        email: mockUser.email,
+        isAdmin: mockUser.isAdmin
+      });
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: {
+          user: {
+            id: mockUser.id,
+            email: mockUser.email,
+            isAdmin: mockUser.isAdmin,
+            createdAt: mockUser.createdAt
+          },
+          accessToken: mockToken
+        },
+        message: 'Login successful'
+      });
+    });
+
+    it('should handle authentication failure', async () => {
+      const error = new Error('Invalid credentials');
+      mockUserService.prototype.authenticateUser.mockRejectedValue(error);
+
+      await authController.login(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+
+    it('should handle missing credentials', async () => {
+      mockRequest.body = {};
+
+      await authController.login(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Email and password are required')
+        })
+      );
+    });
+  });
+
+  describe('getCurrentUser', () => {
+    it('should return current user', async () => {
+      const mockUser = {
+        id: 'user-id',
+        email: 'test@example.com',
+        isAdmin: false,
+        createdAt: new Date()
+      };
+
+      mockRequest.user = mockUser;
+
+      await authController.getCurrentUser(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: mockUser
+      });
+    });
+
+    it('should handle missing user in request', async () => {
+      mockRequest.user = undefined;
+
+      await authController.getCurrentUser(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('User not found in request')
+        })
+      );
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should refresh token successfully', async () => {
+      const mockUser = {
+        id: 'user-id',
+        email: 'test@example.com',
+        isAdmin: false
+      };
+      
+      const mockToken = 'new-jwt-token';
+
+      mockRequest.user = mockUser;
+      mockJwtUtils.generateToken.mockReturnValue(mockToken);
+
+      await authController.refreshToken(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockJwtUtils.generateToken).toHaveBeenCalledWith({
+        id: mockUser.id,
+        email: mockUser.email,
+        isAdmin: mockUser.isAdmin
+      });
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: { accessToken: mockToken },
+        message: 'Token refreshed successfully'
+      });
+    });
+
+    it('should handle missing user in request', async () => {
+      mockRequest.user = undefined;
+
+      await authController.refreshToken(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('User not found in request')
+        })
+      );
+    });
+  });
+});

@@ -1,0 +1,79 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # High concurrency burst for testing race conditions
+    - duration: 60
+      arrivalCount: 100 # 100 users in 60 seconds
+      name: "Concurrency burst test"
+  http:
+    timeout: 30
+    pool: 50
+  variables:
+    adminEmail: 'admin@loadtest.com'
+    adminPassword: 'AdminLoadTest123!'
+
+scenarios:
+  - name: "Setup Admin and Class"
+    weight: 1
+    flow:
+      # Create admin user
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "{{ adminEmail }}"
+            password: "{{ adminPassword }}"
+          capture:
+            - json: "$.data.accessToken"
+              as: "adminToken"
+          expect:
+            - statusCode: [201, 409]
+      # Create a limited capacity class for testing
+      - post:
+          url: "/api/mclasses"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          json:
+            title: "Concurrency Test Class"
+            description: "Limited capacity class for load testing"
+            maxParticipants: 10
+            startAt: "{{ $now + 86400000 }}" # Tomorrow
+            endAt: "{{ $now + 90000000 }}" # Day after tomorrow
+          capture:
+            - json: "$.data.id"
+              as: "testClassId"
+          expect:
+            - statusCode: [201, 409]
+
+  - name: "Concurrent Class Applications"
+    weight: 99
+    flow:
+      # Register new user
+      - post:
+          url: "/api/auth/signup"
+          json:
+            email: "user{{ $randomInt(1, 10000) }}@concurrency.com"
+            password: "ConcurrentTest123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "userToken"
+            - json: "$.data.user.id"
+              as: "userId"
+          expect:
+            - statusCode: [201, 409]
+      # Get available classes
+      - get:
+          url: "/api/mclasses"
+          headers:
+            Authorization: "Bearer {{ userToken }}"
+          capture:
+            - json: "$.data.items[0].id"
+              as: "classId"
+          expect:
+            - statusCode: 200
+      # Apply to class (test concurrency control)
+      - post:
+          url: "/api/mclasses/{{ classId }}/apply"
+          headers:
+            Authorization: "Bearer {{ userToken }}"
+          expect:
+            - statusCode: [201, 409] # Success or capacity exceeded
